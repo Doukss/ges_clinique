@@ -220,7 +220,7 @@ const Dashboard = () => {
         </div>
 
         {/* Welcome Message */}
-        <div className="mt-8 bg-gradient-to-r from-violet-600 to-violet-700 rounded-xl p-8 text-white">
+        <div className="mt-8 bg-linear-to-r from-gray-500  to-violet-500 rounded-xl p-8 text-white">
           <h2 className="text-2xl font-bold mb-2">Bienvenue sur TECH 221</h2>
           <p className="text-violet-100">
             Gérez facilement vos départements, employés, projets et

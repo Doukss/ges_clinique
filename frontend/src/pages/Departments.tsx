@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "../components/Layout";
+import SearchInput from "../components/SearchInput";
+import Pagination from "../components/Pagination";
 import { departmentService, employeeService } from "../services/mockData";
 import type { Department } from "../types";
+
+const ITEMS_PER_PAGE = 10;
 
 const Departments = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -9,6 +13,8 @@ const Departments = () => {
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(
     null,
   );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState({ code: "", libelle: "" });
   const [error, setError] = useState("");
   const [employeeCounts, setEmployeeCounts] = useState<Record<number, number>>(
@@ -74,16 +80,47 @@ const Departments = () => {
     setIsModalOpen(true);
   };
 
+  // Filter departments based on search query
+  const filteredDepartments = useMemo(() => {
+    if (!searchQuery.trim()) return departments;
+    const query = searchQuery.toLowerCase();
+    return departments.filter(
+      (d) =>
+        d.code.toLowerCase().includes(query) ||
+        d.libelle.toLowerCase().includes(query),
+    );
+  }, [departments, searchQuery]);
+
+  // Paginate filtered departments
+  const paginatedDepartments = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredDepartments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredDepartments, currentPage]);
+
+  const totalPages = Math.ceil(filteredDepartments.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   return (
     <Layout>
       <div className="animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Départements</h1>
-            <p className="text-gray-500 mt-2">
-              Gérez les départements de l'entreprise
-            </p>
+        <div className="mt-8 bg-linear-to-r from-violet-300  to-violet-200 rounded-xl p-6 text-white">
+          <h1 className="text-3xl font-bold text-gray-900">Départements</h1>
+          <p className="text-white mt-2">
+            Gérez les départements de l'entreprise
+          </p>
+        </div>
+        <div className="flex items-center justify-between mb-8 mt-12">
+          <div className="w-72 text-gray-700">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Rechercher un département..."
+            />
           </div>
           <button
             onClick={openNewModal}
@@ -117,7 +154,7 @@ const Departments = () => {
         {/* Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full">
-            <thead className="bg-violet-600 text-white">
+            <thead className="bg-violet-100 text-gray-900">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">Code</th>
                 <th className="px-6 py-4 text-left font-semibold">Libellé</th>
@@ -126,18 +163,19 @@ const Departments = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {departments.length === 0 ? (
+              {filteredDepartments.length === 0 ? (
                 <tr>
                   <td
                     colSpan={4}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    Aucun département trouvé. Cliquez sur "Nouveau département"
-                    pour en créer un.
+                    {searchQuery
+                      ? "Aucun département ne correspond à votre recherche."
+                      : 'Aucun département trouvé. Cliquez sur "Nouveau département"\n                    pour en créer un.'}
                   </td>
                 </tr>
               ) : (
-                departments.map((department) => (
+                paginatedDepartments.map((department) => (
                   <tr
                     key={department.id}
                     className="hover:bg-violet-50 transition-colors"
@@ -206,6 +244,15 @@ const Departments = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredDepartments.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
 
         {/* Modal */}
         {isModalOpen && (

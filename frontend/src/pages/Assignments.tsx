@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "../components/Layout";
+import SearchInput from "../components/SearchInput";
+import Pagination from "../components/Pagination";
 import {
   assignmentService,
   employeeService,
@@ -7,11 +9,15 @@ import {
 } from "../services/mockData";
 import type { Assignment, Employee, Project } from "../types";
 
+const ITEMS_PER_PAGE = 10;
+
 const Assignments = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState({
     employeId: 0,
     projetId: 0,
@@ -75,20 +81,54 @@ const Assignments = () => {
     return projects.find((p) => p.id === formData.projetId);
   };
 
+  // Filter assignments based on search query
+  const filteredAssignments = useMemo(() => {
+    if (!searchQuery.trim()) return assignments;
+    const query = searchQuery.toLowerCase();
+    return assignments.filter(
+      (a) =>
+        a.employe?.prenom.toLowerCase().includes(query) ||
+        a.employe?.nom.toLowerCase().includes(query) ||
+        a.employe?.email.toLowerCase().includes(query) ||
+        a.projet?.nom.toLowerCase().includes(query) ||
+        a.role.toLowerCase().includes(query),
+    );
+  }, [assignments, searchQuery]);
+
+  // Paginate filtered assignments
+  const paginatedAssignments = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAssignments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredAssignments, currentPage]);
+
+  const totalPages = Math.ceil(filteredAssignments.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   return (
     <Layout>
       <div className="animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Affectations</h1>
-            <p className="text-gray-500 mt-2">
-              Gérez les affectations des employés aux projets
-            </p>
+        <div className="mt-8 bg-linear-to-r from-amber-100  to-amber-100 rounded-xl p-6 text-white">
+          <h1 className="text-3xl font-bold text-gray-900">Affectations</h1>
+          <p className="text-gray-900 mt-2">
+            Gérez les affectations des employés aux projets
+          </p>
+        </div>
+        <div className="flex items-center justify-between mb-8 mt-10">
+          <div className="w-72 text-gray-700">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Rechercher une affectation..."
+            />
           </div>
           <button
             onClick={openNewModal}
-            className="flex items-center space-x-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -118,7 +158,7 @@ const Assignments = () => {
         {/* Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full">
-            <thead className="bg-violet-600 text-white">
+            <thead className="bg-amber-100 text-gray-900">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">Employé</th>
                 <th className="px-6 py-4 text-left font-semibold">Projet</th>
@@ -130,21 +170,22 @@ const Assignments = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {assignments.length === 0 ? (
+              {filteredAssignments.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    Aucune affectation trouvée. Cliquez sur "Nouvelle
-                    affectation" pour en créer une.
+                    {searchQuery
+                      ? "Aucune affectation ne correspond à votre recherche."
+                      : 'Aucune affectation trouvée. Cliquez sur "Nouvelle\n                    affectation" pour en créer une.'}
                   </td>
                 </tr>
               ) : (
-                assignments.map((assignment) => (
+                paginatedAssignments.map((assignment) => (
                   <tr
                     key={assignment.id}
-                    className="hover:bg-violet-50 transition-colors"
+                    className="hover:bg-amber-50 transition-colors"
                   >
                     <td className="px-6 py-4">
                       <div>
@@ -207,6 +248,15 @@ const Assignments = () => {
           </table>
         </div>
 
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredAssignments.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
+
         {/* Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -249,7 +299,7 @@ const Assignments = () => {
                         employeId: parseInt(e.target.value),
                       })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     required
                   >
                     <option value={0}>Sélectionner un employé</option>
@@ -274,7 +324,7 @@ const Assignments = () => {
                         dateAffectation: getSelectedProject()?.dateDebut || "",
                       })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     required
                   >
                     <option value={0}>Sélectionner un projet</option>
@@ -297,7 +347,7 @@ const Assignments = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, role: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     placeholder="Ex: Chef de Projet, Développeur, Comptable"
                     required
                   />
@@ -316,7 +366,7 @@ const Assignments = () => {
                         dateAffectation: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     min={getSelectedProject()?.dateDebut}
                     required
                   />
@@ -334,13 +384,13 @@ const Assignments = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                    className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
                   >
                     Créer
                   </button>

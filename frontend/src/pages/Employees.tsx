@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "../components/Layout";
+import SearchInput from "../components/SearchInput";
+import Pagination from "../components/Pagination";
 import { employeeService, departmentService } from "../services/mockData";
 import type { Employee, Department } from "../types";
+
+const ITEMS_PER_PAGE = 10;
 
 const Employees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState({
     prenom: "",
     nom: "",
@@ -87,20 +93,56 @@ const Employees = () => {
     setIsModalOpen(true);
   };
 
+  // Filter employees based on search query
+  const filteredEmployees = useMemo(() => {
+    if (!searchQuery.trim()) return employees;
+    const query = searchQuery.toLowerCase();
+    return employees.filter(
+      (e) =>
+        e.prenom.toLowerCase().includes(query) ||
+        e.nom.toLowerCase().includes(query) ||
+        e.email.toLowerCase().includes(query) ||
+        e.telephone.toLowerCase().includes(query) ||
+        e.departement?.code.toLowerCase().includes(query) ||
+        e.departement?.libelle.toLowerCase().includes(query),
+    );
+  }, [employees, searchQuery]);
+
+  // Paginate filtered employees
+  const paginatedEmployees = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredEmployees.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredEmployees, currentPage]);
+
+  const totalPages = Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   return (
     <Layout>
       <div className="animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Employés</h1>
-            <p className="text-gray-500 mt-2">
-              Gérez les employés de l'entreprise
-            </p>
+        <div className="mt-8 bg-linear-to-r from-blue-200  to-blue-200 rounded-xl p-6 text-white">
+          <h1 className="text-3xl font-bold text-gray-900">Employés</h1>
+          <p className="text-gray-900 mt-2">
+            Gérez les employés de l'entreprise
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between mb-8 mt-10">
+          <div className="w-72 text-gray-700">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Rechercher un employé..."
+            />
           </div>
           <button
             onClick={openNewModal}
-            className="flex items-center space-x-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -130,7 +172,7 @@ const Employees = () => {
         {/* Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full">
-            <thead className="bg-violet-600 text-white">
+            <thead className="bg-blue-100 text-gray-900">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">Nom</th>
                 <th className="px-6 py-4 text-left font-semibold">Email</th>
@@ -142,21 +184,22 @@ const Employees = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {employees.length === 0 ? (
+              {filteredEmployees.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    Aucun employé trouvé. Cliquez sur "Nouvel employé" pour en
-                    créer un.
+                    {searchQuery
+                      ? "Aucun employé ne correspond à votre recherche."
+                      : 'Aucun employé trouvé. Cliquez sur "Nouvel employé" pour en\n                    créer un.'}
                   </td>
                 </tr>
               ) : (
-                employees.map((employee) => (
+                paginatedEmployees.map((employee) => (
                   <tr
                     key={employee.id}
-                    className="hover:bg-violet-50 transition-colors"
+                    className="hover:bg-blue-50 transition-colors"
                   >
                     <td className="px-6 py-4">
                       <div>
@@ -227,6 +270,15 @@ const Employees = () => {
           </table>
         </div>
 
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredEmployees.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
+
         {/* Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -268,7 +320,7 @@ const Employees = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, prenom: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                      className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
                   </div>
@@ -282,7 +334,7 @@ const Employees = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, nom: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                      className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     />
                   </div>
@@ -298,7 +350,7 @@ const Employees = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="vous@tech221.com"
                     required
                   />
@@ -314,7 +366,7 @@ const Employees = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, telephone: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="0612345678"
                     minLength={6}
                     required
@@ -333,7 +385,7 @@ const Employees = () => {
                         departementId: parseInt(e.target.value),
                       })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     <option value={0}>Sélectionner un département</option>
@@ -355,7 +407,7 @@ const Employees = () => {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                    className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     {editingEmployee ? "Mettre à jour" : "Créer"}
                   </button>

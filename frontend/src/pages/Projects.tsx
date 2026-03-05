@@ -1,12 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "../components/Layout";
+import SearchInput from "../components/SearchInput";
+import Pagination from "../components/Pagination";
 import { projectService, assignmentService } from "../services/mockData";
 import type { Project, ProjectStatus } from "../types";
+
+const ITEMS_PER_PAGE = 10;
 
 const Projects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [formData, setFormData] = useState({
     nom: "",
     description: "",
@@ -101,6 +107,31 @@ const Projects = () => {
     setIsModalOpen(true);
   };
 
+  // Filter projects based on search query
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects;
+    const query = searchQuery.toLowerCase();
+    return projects.filter(
+      (p) =>
+        p.nom.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query) ||
+        p.statut.toLowerCase().includes(query),
+    );
+  }, [projects, searchQuery]);
+
+  // Paginate filtered projects
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProjects.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProjects, currentPage]);
+
+  const totalPages = Math.ceil(filteredProjects.length / ITEMS_PER_PAGE);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const getStatusBadge = (status: ProjectStatus) => {
     const styles: Record<ProjectStatus, string> = {
       BROUILLON: "bg-amber-100 text-amber-800",
@@ -127,16 +158,23 @@ const Projects = () => {
     <Layout>
       <div className="animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Projets</h1>
-            <p className="text-gray-500 mt-2">
-              Gérez les projets de l'entreprise
-            </p>
+        <div className="mt-8 bg-linear-to-r from-green-100  to-green-100 rounded-xl p-6 text-white">
+          <h1 className="text-3xl font-bold text-gray-900">Projets</h1>
+          <p className="text-gray-900 mt-2">
+            Gérez les projets de l'entreprise
+          </p>
+        </div>
+        <div className="flex items-center justify-between mb-8 mt-10">
+          <div className="w-72 text-gray-700">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Rechercher un projet..."
+            />
           </div>
           <button
             onClick={openNewModal}
-            className="flex items-center space-x-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -166,7 +204,7 @@ const Projects = () => {
         {/* Table */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full">
-            <thead className="bg-violet-600 text-white">
+            <thead className="bg-green-100 text-gray-900">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">Nom</th>
                 <th className="px-6 py-4 text-left font-semibold">
@@ -181,18 +219,19 @@ const Projects = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {projects.length === 0 ? (
+              {filteredProjects.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    Aucun projet trouvé. Cliquez sur "Nouveau projet" pour en
-                    créer un.
+                    {searchQuery
+                      ? "Aucun projet ne correspond à votre recherche."
+                      : 'Aucun projet trouvé. Cliquez sur "Nouveau projet" pour en\n                    créer un.'}
                   </td>
                 </tr>
               ) : (
-                projects.map((project) => (
+                paginatedProjects.map((project) => (
                   <tr
                     key={project.id}
                     className="hover:bg-violet-50 transition-colors"
@@ -281,6 +320,15 @@ const Projects = () => {
           </table>
         </div>
 
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={filteredProjects.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
+
         {/* Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -321,7 +369,7 @@ const Projects = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, nom: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     required
                   />
                 </div>
@@ -335,7 +383,7 @@ const Projects = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, description: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     rows={3}
                   />
                 </div>
@@ -351,7 +399,7 @@ const Projects = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, dateDebut: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                      className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       required
                     />
                   </div>
@@ -365,7 +413,7 @@ const Projects = () => {
                       onChange={(e) =>
                         setFormData({ ...formData, dateFin: e.target.value })
                       }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                      className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     />
                   </div>
                 </div>
@@ -382,7 +430,7 @@ const Projects = () => {
                         statut: e.target.value as ProjectStatus,
                       })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    className="w-full px-4 py-3 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                     required
                   >
                     <option value="BROUILLON">Brouillon</option>
@@ -396,13 +444,13 @@ const Projects = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-900 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                    className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
                     {editingProject ? "Mettre à jour" : "Créer"}
                   </button>
