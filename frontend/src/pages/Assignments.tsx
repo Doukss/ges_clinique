@@ -1,0 +1,357 @@
+import { useEffect, useState } from "react";
+import Layout from "../components/Layout";
+import {
+  assignmentService,
+  employeeService,
+  projectService,
+} from "../services/mockData";
+import type { Assignment, Employee, Project } from "../types";
+
+const Assignments = () => {
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    employeId: 0,
+    projetId: 0,
+    role: "",
+    dateAffectation: "",
+  });
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = () => {
+    setAssignments(assignmentService.getAll());
+    setEmployees(employeeService.getAll());
+    setProjects(
+      projectService
+        .getAll()
+        .filter((p) => p.statut !== "TERMINE" && p.statut !== "ANNULE"),
+    );
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    try {
+      assignmentService.create(formData);
+      setIsModalOpen(false);
+      setFormData({ employeId: 0, projetId: 0, role: "", dateAffectation: "" });
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+    }
+  };
+
+  const handleDelete = (id: number) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer cette affectation ?")) {
+      try {
+        assignmentService.delete(id);
+        loadData();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Une erreur est survenue");
+      }
+    }
+  };
+
+  const openNewModal = () => {
+    // Refresh projects to get only active ones
+    setProjects(
+      projectService
+        .getAll()
+        .filter((p) => p.statut !== "TERMINE" && p.statut !== "ANNULE"),
+    );
+    setFormData({ employeId: 0, projetId: 0, role: "", dateAffectation: "" });
+    setError("");
+    setIsModalOpen(true);
+  };
+
+  const getSelectedProject = () => {
+    return projects.find((p) => p.id === formData.projetId);
+  };
+
+  return (
+    <Layout>
+      <div className="animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Affectations</h1>
+            <p className="text-gray-500 mt-2">
+              Gérez les affectations des employés aux projets
+            </p>
+          </div>
+          <button
+            onClick={openNewModal}
+            className="flex items-center space-x-2 bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+              />
+            </svg>
+            <span>Nouvelle affectation</span>
+          </button>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-violet-600 text-white">
+              <tr>
+                <th className="px-6 py-4 text-left font-semibold">Employé</th>
+                <th className="px-6 py-4 text-left font-semibold">Projet</th>
+                <th className="px-6 py-4 text-left font-semibold">Rôle</th>
+                <th className="px-6 py-4 text-left font-semibold">
+                  Date d'affectation
+                </th>
+                <th className="px-6 py-4 text-left font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {assignments.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
+                    Aucune affectation trouvée. Cliquez sur "Nouvelle
+                    affectation" pour en créer une.
+                  </td>
+                </tr>
+              ) : (
+                assignments.map((assignment) => (
+                  <tr
+                    key={assignment.id}
+                    className="hover:bg-violet-50 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {assignment.employe?.prenom} {assignment.employe?.nom}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {assignment.employe?.email}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {assignment.projet?.nom}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {assignment.projet?.statut === "EN_COURS"
+                            ? "En cours"
+                            : assignment.projet?.statut}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-violet-100 text-violet-800">
+                        {assignment.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {new Date(assignment.dateAffectation).toLocaleDateString(
+                        "fr-FR",
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={() => handleDelete(assignment.id)}
+                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Supprimer"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md p-6 animate-fade-in">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Nouvelle affectation
+                </h2>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Employé *
+                  </label>
+                  <select
+                    value={formData.employeId}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        employeId: parseInt(e.target.value),
+                      })
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    required
+                  >
+                    <option value={0}>Sélectionner un employé</option>
+                    {employees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.prenom} {emp.nom} - {emp.departement?.code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Projet *
+                  </label>
+                  <select
+                    value={formData.projetId}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        projetId: parseInt(e.target.value),
+                        dateAffectation: getSelectedProject()?.dateDebut || "",
+                      })
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    required
+                  >
+                    <option value={0}>Sélectionner un projet</option>
+                    {projects.map((proj) => (
+                      <option key={proj.id} value={proj.id}>
+                        {proj.nom} (
+                        {proj.statut === "EN_COURS" ? "En cours" : proj.statut})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rôle *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.role}
+                    onChange={(e) =>
+                      setFormData({ ...formData, role: e.target.value })
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    placeholder="Ex: Chef de Projet, Développeur, Comptable"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Date d'affectation *
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dateAffectation}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        dateAffectation: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    min={getSelectedProject()?.dateDebut}
+                    required
+                  />
+                  {getSelectedProject() && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Date de début du projet:{" "}
+                      {new Date(
+                        getSelectedProject()!.dateDebut,
+                      ).toLocaleDateString("fr-FR")}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                  >
+                    Créer
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+};
+
+export default Assignments;

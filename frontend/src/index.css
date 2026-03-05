@@ -1,68 +1,103 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Custom violet theme for the application */
+@theme {
+  --color-primary: #8b5cf6;
+  --color-primary-dark: #7c3aed;
+  --color-primary-light: #a78bfa;
+  --color-secondary: #c4b5fd;
+  --color-accent: #ddd6fe;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
+/* Base styles */
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  @apply bg-gray-50 text-gray-900;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Login page styles */
+.login-gradient {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+/* Sidebar styles */
+.sidebar-gradient {
+  background: linear-gradient(180deg, #8b5cf6 0%, #7c3aed 100%);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+.sidebar-link {
+  @apply text-white/90 hover:bg-white/20 hover:text-white transition-all duration-200;
+}
+
+.sidebar-link.active {
+  @apply bg-white/30 text-white font-semibold;
+}
+
+/* Card styles */
+.card-violet {
+  @apply border-2 border-violet-500 shadow-lg shadow-violet-500/20;
+}
+
+.stats-card {
+  @apply border-l-4 border-violet-500;
+}
+
+/* Dashboard card hover */
+.dashboard-card {
+  @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-violet-500/20;
+}
+
+/* Table styles */
+.table-violet th {
+  @apply bg-violet-600 text-white;
+}
+
+.table-violet tr:hover {
+  @apply bg-violet-50;
+}
+
+/* Form input focus */
+.form-input:focus {
+  @apply border-violet-500 ring-2 ring-violet-200;
+}
+
+/* Status badges */
+.status-draft {
+  @apply bg-amber-100 text-amber-800;
+}
+
+.status-in-progress {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-completed {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-cancelled {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-  a:hover {
-    color: #747bff;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  button {
-    background-color: #f9f9f9;
-  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Button styles */
+.btn-violet {
+  @apply bg-violet-600 hover:bg-violet-700 text-white;
+}
+
+.btn-violet-outline {
+  @apply border-2 border-violet-600 text-violet-600 hover:bg-violet-600 hover:text-white;
 }
