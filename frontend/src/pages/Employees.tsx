@@ -125,11 +125,18 @@ const Employees = () => {
     <Layout>
       <div className="animate-fade-in">
         {/* Header */}
-        <div className="mt-8 bg-linear-to-r from-blue-200  to-blue-200 rounded-xl p-6 text-white">
-          <h1 className="text-3xl font-bold text-gray-900">Employés</h1>
+        <div className="mt-8 flex justify-between bg-linear-to-r from-blue-200  to-blue-200 rounded-xl p-6 text-white">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Employés</h1>
           <p className="text-gray-900 mt-2">
             Gérez les employés de l'entreprise
           </p>
+          </div>
+          <div>
+            <div className="w-28 h-20 mr-5 bg-amber-700">
+              <img src="/projet.jpg" alt="" />
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center justify-between mb-8 mt-10">

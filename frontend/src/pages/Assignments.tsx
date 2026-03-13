@@ -112,11 +112,18 @@ const Assignments = () => {
     <Layout>
       <div className="animate-fade-in">
         {/* Header */}
-        <div className="mt-8 bg-linear-to-r from-amber-100  to-amber-100 rounded-xl p-6 text-white">
-          <h1 className="text-3xl font-bold text-gray-900">Affectations</h1>
+        <div className="mt-8 flex justify-between bg-linear-to-r from-amber-100  to-amber-100 rounded-xl p-6 text-white">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Affectations</h1>
           <p className="text-gray-900 mt-2">
             Gérez les affectations des employés aux projets
           </p>
+          </div>
+          <div>
+            <div className="w-28 h-20 mr-5 bg-amber-700">
+              <img src="/projet.jpg" alt="" />
+            </div>
+          </div>
         </div>
         <div className="flex items-center justify-between mb-8 mt-10">
           <div className="w-72 text-gray-700">
