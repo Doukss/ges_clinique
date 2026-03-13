@@ -609,6 +609,86 @@ export const getStats = () => {
   };
 };
 
+// Chart data: Projects by status (for Pie Chart)
+export const getProjectsByStatus = () => {
+  const projects = projectService.getAll();
+  const statusCounts = {
+    BROUILLON: 0,
+    EN_COURS: 0,
+    TERMINE: 0,
+    ANNULE: 0,
+  };
+
+  projects.forEach((p) => {
+    if (statusCounts.hasOwnProperty(p.statut)) {
+      statusCounts[p.statut]++;
+    }
+  });
+
+  return [
+    { name: "Brouillon", value: statusCounts.BROUILLON, color: "#94a3b8" },
+    { name: "En cours", value: statusCounts.EN_COURS, color: "#f59e0b" },
+    { name: "Terminé", value: statusCounts.TERMINE, color: "#10b981" },
+    { name: "Annulé", value: statusCounts.ANNULE, color: "#ef4444" },
+  ].filter((item) => item.value > 0);
+};
+
+// Chart data: Employees by department (for Bar Chart)
+export const getEmployeesByDepartment = () => {
+  const employees = employeeService.getAll();
+  const departments = departmentService.getAll();
+
+  return departments.map((dept) => ({
+    name: dept.code,
+    employes: employees.filter((e) => e.departementId === dept.id).length,
+  }));
+};
+
+// Chart data: Assignments by project (for Horizontal Bar Chart)
+export const getAssignmentsByProject = () => {
+  const assignments = assignmentService.getAll();
+  const projects = projectService.getAll();
+
+  return projects.map((project) => ({
+    name: project.nom.length > 15 ? project.nom.substring(0, 15) + "..." : project.nom,
+    affectations: assignments.filter((a) => a.projetId === project.id).length,
+  })).filter((item) => item.affectations > 0);
+};
+
+// Chart data: Monthly project trends (for Area Chart)
+export const getMonthlyProjectTrends = () => {
+  const projects = projectService.getAll();
+  const months = [];
+  const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin", "Juil", "Août", "Sep", "Oct", "Nov", "Déc"];
+
+  // Generate data for last 6 months
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const month = date.getMonth();
+    const year = date.getFullYear();
+
+    const started = projects.filter((p) => {
+      const startDate = new Date(p.dateDebut);
+      return startDate.getMonth() === month && startDate.getFullYear() === year;
+    }).length;
+
+    const completed = projects.filter((p) => {
+      if (!p.dateFin) return false;
+      const endDate = new Date(p.dateFin);
+      return endDate.getMonth() === month && endDate.getFullYear() === year;
+    }).length;
+
+    months.push({
+      month: monthNames[month],
+      started,
+      completed,
+    });
+  }
+
+  return months;
+};
+
 // Reset data to initial state (for testing)
 export const resetData = () => {
   localStorage.setItem(

@@ -1,6 +1,27 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import { getStats } from "../services/mockData";
+import {
+  getStats,
+  getProjectsByStatus,
+  getEmployeesByDepartment,
+  getAssignmentsByProject,
+  getMonthlyProjectTrends,
+} from "../services/mockData";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  Legend,
+} from "recharts";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -12,8 +33,25 @@ const Dashboard = () => {
     totalAssignments: 0,
   });
 
+  const [projectsByStatus, setProjectsByStatus] = useState<
+    { name: string; value: number; color: string }[]
+  >([]);
+  const [employeesByDept, setEmployeesByDept] = useState<
+    { name: string; employes: number }[]
+  >([]);
+  const [assignmentsByProject, setAssignmentsByProject] = useState<
+    { name: string; affectations: number }[]
+  >([]);
+  const [monthlyTrends, setMonthlyTrends] = useState<
+    { month: string; started: number; completed: number }[]
+  >([]);
+
   useEffect(() => {
     setStats(getStats());
+    setProjectsByStatus(getProjectsByStatus());
+    setEmployeesByDept(getEmployeesByDepartment());
+    setAssignmentsByProject(getAssignmentsByProject());
+    setMonthlyTrends(getMonthlyProjectTrends());
   }, []);
 
   const statCards = [
@@ -67,11 +105,11 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {statCards.map((card, index) => (
             <div
               key={index}
-              className="dashboard-card bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+              className="dashboard-card bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
             >
               <div className="flex items-center justify-between">
                 <div>
@@ -105,8 +143,210 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Projects by Status - Pie Chart */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Projets par statut
+            </h2>
+            <div className="h-64">
+              {projectsByStatus.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={projectsByStatus}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {projectsByStatus.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  Aucune donnée disponible
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Employees by Department - Bar Chart */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Employés par département
+            </h2>
+            <div className="h-64">
+              {employeesByDept.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={employeesByDept}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                    <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
+                    <YAxis stroke="#6b7280" fontSize={12} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <Bar
+                      dataKey="employes"
+                      fill="#8b5cf6"
+                      radius={[4, 4, 0, 0]}
+                      name="Employés"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  Aucune donnée disponible
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Second Row of Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Monthly Project Trends - Area Chart */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Tendances mensuelles des projets
+            </h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={monthlyTrends}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient
+                      id="colorStarted"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                      <stop
+                        offset="95%"
+                        stopColor="#f59e0b"
+                        stopOpacity={0.1}
+                      />
+                    </linearGradient>
+                    <linearGradient
+                      id="colorCompleted"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                      <stop
+                        offset="95%"
+                        stopColor="#10b981"
+                        stopOpacity={0.1}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} />
+                  <YAxis stroke="#6b7280" fontSize={12} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="started"
+                    stroke="#f59e0b"
+                    fillOpacity={1}
+                    fill="url(#colorStarted)"
+                    name="Projets commencés"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="completed"
+                    stroke="#10b981"
+                    fillOpacity={1}
+                    fill="url(#colorCompleted)"
+                    name="Projets terminés"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Assignments by Project - Horizontal Bar Chart */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Affectations par projet
+            </h2>
+            <div className="h-64">
+              {assignmentsByProject.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={assignmentsByProject}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                    <XAxis type="number" stroke="#6b7280" fontSize={12} />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      stroke="#6b7280"
+                      fontSize={11}
+                      width={100}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#fff",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                      }}
+                    />
+                    <Bar
+                      dataKey="affectations"
+                      fill="#ec4899"
+                      radius={[0, 4, 4, 0]}
+                      name="Affectations"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-500">
+                  Aucune donnée disponible
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Quick Actions */}
-        <div className="mt-8 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Actions rapides
           </h2>
@@ -220,7 +460,7 @@ const Dashboard = () => {
         </div>
 
         {/* Welcome Message */}
-        <div className="mt-8 bg-linear-to-r from-gray-500  to-violet-500 rounded-xl p-8 text-white">
+        <div className="bg-linear-to-r from-gray-500 to-violet-500 rounded-xl p-8 text-white">
           <h2 className="text-2xl font-bold mb-2">Bienvenue sur TECH 221</h2>
           <p className="text-violet-100">
             Gérez facilement vos départements, employés, projets et
